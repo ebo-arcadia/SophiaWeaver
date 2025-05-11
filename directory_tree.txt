@@ -1,0 +1,46 @@
+SophiaWeaver/
+├── app/                      # Main application code
+│   ├── backend/              # FastAPI server
+│   │   ├── app/              # FastAPI specific app folder
+│   │   │   ├── __init__.py
+│   │   │   ├── main.py       # FastAPI app definition, endpoints
+│   │   │   ├── models.py     # Pydantic models for request/response
+│   │   │   └── services/     # Business logic, model loading, inference
+│   │   │       ├── __init__.py
+│   │   │       └── chat_service.py
+│   │   ├── Dockerfile        # Dockerfile for backend
+│   │   └── requirements.txt  # Python dependencies for backend
+│   ├── frontend/             # Streamlit UI
+│   │   ├── app.py            # Streamlit application script
+│   │   ├── Dockerfile        # Dockerfile for frontend
+│   │   └── requirements.txt  # Python dependencies for frontend
+├── data/
+│   ├── content_sources/      # Original PDF ebooks by domain/topic
+│   │   └── domain_the_bible/ # Specific domain for The Bible
+│   │       └── sample_book1.pdf
+│   │       └── sample_book2.pdf
+│   ├── processed_texts/      # Cleaned text, tokenized data by domain/topic
+│   │   └── domain_the_bible/ # Specific domain for The Bible
+│   │       └── training_corpus.txt # Combined text for training
+│   │       └── validation_corpus.txt # (Optional)
+├── trained_models/           # Trained model artifacts and configurations
+│   └── the_bible_gpt2_small/ # Model specific to The Bible and base model
+│       ├── config.json
+│       ├── pytorch_model.bin
+│       └── tokenizer_config.json
+│       # (vocab.json, merges.txt for GPT2Tokenizer)
+├── notebooks/                # Jupyter notebooks for experimentation
+│   ├── 01_data_exploration.ipynb
+│   ├── 02_pdf_extraction_preprocessing.ipynb
+│   └── 03_model_finetuning_experiment.ipynb
+├── scripts/                  # Helper scripts
+│   ├── extract_text_from_pdfs.py # Script to process PDFs
+│   ├── fine_tune_model.py      # Model training script
+│   └── (evaluate_model.py)     # (Optional for Phase 1, but good to have)
+├── tests/                    # Unit and integration tests (Future phase)
+│   ├── backend/
+│   └── frontend/
+├── .env.example              # Example environment variables
+├── .gitignore
+├── docker-compose.yml        # Optional: For local multi-container development
+└── README.md
