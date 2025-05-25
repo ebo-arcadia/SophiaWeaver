@@ -5,5 +5,6 @@ transformers[torch] # or transformers[tensorflow] if you prefer
 torch # or tensorflow
 python-dotenv # Good practice for managing env vars, though not strictly used in this simple example
 PyPDF2
+PyCryptodome
 # Add sentencepiece if your chosen tokenizer needs it (e.g. for Llama, T5)
 # sentencepiece
