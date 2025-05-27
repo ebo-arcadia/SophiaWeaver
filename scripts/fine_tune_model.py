@@ -69,7 +69,7 @@ def fine_tune():
         save_steps=500,  # Save checkpoint every X steps
         save_total_limit=2,  # Only keep the last 2 checkpoints
         logging_steps=100,  # Log training progress every X steps
-        evaluation_strategy="steps",  # Evaluate during training
+        # evaluation_strategy="steps",  # Evaluate during training
         eval_steps=200,  # Evaluate every X steps
         fp16=torch.cuda.is_available(),  # Use mixed precision if CUDA is available
     )
