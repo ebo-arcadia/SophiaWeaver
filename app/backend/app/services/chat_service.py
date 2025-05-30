@@ -17,7 +17,9 @@ class ChatService:
 
     def _load_model(self):
         if ChatService._model is None or ChatService._tokenizer is None:
-            project_root = Path(__file__).parent.parent.parent.parent  # SophiaWeaver/
+            project_root = Path(__file__).parent.parent.parent  # SophiaWeaver/
+            print(f"Project root: {project_root}")
+
             model_path = project_root / "trained_models" / "the_bible_gpt2_small"  # UPDATED
 
             print(f"Loading model from: {model_path}")
@@ -30,6 +32,7 @@ class ChatService:
                 model_name_or_path = str(model_path)
 
             try:
+                print(f"Attempting to load from: {model_name_or_path}")
                 ChatService._tokenizer = GPT2Tokenizer.from_pretrained(model_name_or_path)
                 ChatService._model = GPT2LMHeadModel.from_pretrained(model_name_or_path)
 
@@ -41,7 +44,9 @@ class ChatService:
                 ChatService._model.eval()  # Set model to evaluation mode
                 print(f"Model loaded successfully on {self.device}.")
             except Exception as e:
-                print(f"Error loading model: {e}")
+                print(f"CRITICAL: Failed to load model from explicitly set path '{model_name_or_path}': {e}")
+                # raise RuntimeError(f"Forced stop: Could not load model from {model_name_or_path}") # Force stop
+                # OR just let it be None and see the warning in main.py
                 ChatService._model = None
                 ChatService._tokenizer = None
                 raise RuntimeError(f"Could not load model: {e}")
