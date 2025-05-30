@@ -7,20 +7,15 @@ from .services.chat_service import chat_service_instance
 # Define the lifespan context manager
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Code to run on startup
-    print("Attempting to load model on startup...")
-    # The model is loaded when chat_service_instance is created (singleton pattern).
-    # We just check its status here.
-    if chat_service_instance._model is None or chat_service_instance._tokenizer is None:
-        print("WARNING: Model could not be loaded on startup. Check chat_service.py logs for details.")
-        # Depending on requirements, might want to prevent the app from starting
-        # if the model is critical and fails to load.
-        # For now, it will start with a warning, and the /chat endpoint will return 503.
+    print("Lifespan: Startup sequence initiated.")
+    # The chat_service_instance is already created when imported.
+    # We use its public method to check readiness.
+    if not chat_service_instance.is_model_ready(): # Use the public method
+        print("WARNING (Lifespan): Model is not ready on startup. Check chat_service.py logs.")
     else:
-        print("Chatbot model loaded and ready.")
+        print("Lifespan: Chatbot model is ready.")
     yield
-    # Code to run on shutdown (if any)
-    print("Application shutting down...")
+    print("Lifespan: Shutdown sequence initiated.")
 
 app = FastAPI(
     title="SophiaWeaver Chatbot API", # UPDATED
@@ -33,7 +28,7 @@ app = FastAPI(
 
 @app.post("/chat", response_model=ChatResponse)
 async def chat_with_bot(request: ChatRequest):
-    if chat_service_instance._model is None or chat_service_instance._tokenizer is None:
+    if not chat_service_instance.is_model_ready():
         raise HTTPException(status_code=503, detail="Model not available. Please try again later.")
     try:
         bot_response_text = chat_service_instance.generate_response(
