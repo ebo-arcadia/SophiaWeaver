@@ -36,6 +36,7 @@ venv.bak
 # data/processed_texts/ # If text files become huge, consider LFS
 
 # Trained Models - CRITICAL TO IGNORE
+data/
 trained_models/
 *.bin
 *.pth
