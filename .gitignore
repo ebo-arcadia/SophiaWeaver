@@ -31,10 +31,16 @@ ENV/
 env.bak
 venv.bak
 
-# Data files (if large or sensitive, otherwise you might want to track processed_texts)
-# data/content_sources/
-# data/processed_texts/ # Consider if you want to version small processed text files
-# trained_models/ # Models are usually too large for Git; use Git LFS or store elsewhere
+# Data files (if large or sensitive)
+# data/content_sources/ # If PDFs are huge, consider LFS or not tracking
+# data/processed_texts/ # If text files become huge, consider LFS
+
+# Trained Models - CRITICAL TO IGNORE
+trained_models/
+*.bin
+*.pth
+*.safetensors
+model.onnx
 
 # IDE specific
 .idea/
@@ -45,12 +51,6 @@ venv.bak
 # OS specific
 .DS_Store
 Thumbs.db
-
-# Docker
-docker-compose.override.yml
-
-# Notebooks
-.ipynb_checkpoints
 
 # Hugging Face cache
 .cache/huggingface/
