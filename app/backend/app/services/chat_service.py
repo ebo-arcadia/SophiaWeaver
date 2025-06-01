@@ -118,11 +118,25 @@ class ChatService:
 
         try:
             prompt = user_input
-            inputs = self._tokenizer.encode(prompt, return_tensors="pt").to(self.device)
 
+            # Use the tokenizer's __call__ method for robust tensor output
+            # This returns a BatchEncoding object (like a dictionary)
+            tokenized_inputs = self._tokenizer(
+                prompt,
+                return_tensors="pt",
+                padding=True,  # Optional: consider padding strategy if batching
+                truncation=True, # Optional: consider truncation if inputs can be too long
+                max_length=512
+            )
+
+            inputs = tokenized_inputs['input_ids'].to(self._device)
+            attention_mask = tokenized_inputs['attention_mask'].to(self._device)
+
+            input_sequence_length = inputs.shape[1]
             outputs = self._model.generate(
                 inputs,
-                max_length=len(inputs[0]) + max_length,
+                attention_mask=attention_mask,
+                max_length=input_sequence_length + max_length,
                 num_return_sequences=1,
                 pad_token_id=self._tokenizer.pad_token_id,
                 eos_token_id=self._tokenizer.eos_token_id,
