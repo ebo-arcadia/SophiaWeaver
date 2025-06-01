@@ -24,42 +24,81 @@ class ChatService:
                 print(f"ChatService: Critical error during initial model load: {e}")
         return cls._instance
 
+        # app/backend/app/services/chat_service.py
+        # ... (other parts of the class) ...
+
     def _load_model(self):
-    #     if ChatService._model is None or ChatService._tokenizer is None:
-    #         project_root = Path(__file__).parent.parent.parent  # SophiaWeaver/
-    #         print(f"Project root: {project_root}")
-    #
-    #         model_path = project_root / "trained_models" / "the_bible_gpt2_small"  # UPDATED
-    #
-    #         print(f"Loading model from: {model_path}")
-    #         if not model_path.exists():
-    #             print(f"Model directory not found: {model_path}")
-    #             print("Please ensure the model is trained and available.")
-    #             print("Attempting to load base 'gpt2' model as a fallback.")
-    #             model_name_or_path = "gpt2"
-    #         else:
-    #             model_name_or_path = str(model_path)
-    #
-    #         try:
-    #             print(f"Attempting to load from: {model_name_or_path}")
-    #             ChatService._tokenizer = GPT2Tokenizer.from_pretrained(model_name_or_path)
-    #             ChatService._model = GPT2LMHeadModel.from_pretrained(model_name_or_path)
-    #
-    #             if ChatService._tokenizer.pad_token is None:
-    #                 ChatService._tokenizer.pad_token = ChatService._tokenizer.eos_token
-    #
-    #             self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    #             ChatService._model.to(self.device)
-    #             ChatService._model.eval()  # Set model to evaluation mode
-    #             print(f"Model loaded successfully on {self.device}.")
-    #         except Exception as e:
-    #             print(f"CRITICAL: Failed to load model from explicitly set path '{model_name_or_path}': {e}")
-    #             # raise RuntimeError(f"Forced stop: Could not load model from {model_name_or_path}") # Force stop
-    #             # OR just let it be None and see the warning in main.py
-    #             ChatService._model = None
-    #             ChatService._tokenizer = None
-    #             raise RuntimeError(f"Could not load model: {e}")
-        pass
+        if ChatService._model is None or ChatService._tokenizer is None:
+            # Correctly navigate to the project root "SophiaWeaver/"
+            current_file_path = Path(__file__).resolve()
+            project_root = current_file_path.parent.parent.parent.parent.parent
+
+            model_path = project_root / "trained_models" / "the_bible_gpt2_small"
+
+            print(f"DEBUG: Current file __file__: {current_file_path}")
+            print(f"DEBUG: Calculated project_root: {project_root}")
+            print(f"DEBUG: Attempting to load model from absolute path: {model_path.resolve()}")
+
+            if not model_path.exists() or not model_path.is_dir():
+                print(f"Model directory not found or is not a directory: {model_path.resolve()}")
+                print("Please ensure the model is trained and available in the correct location.")
+                # Optional: List contents of expected parent to help debug
+                try:
+                    print(f"Listing contents of {project_root / 'trained_models'}:")
+                    print(list((project_root / "trained_models").iterdir()))
+                except FileNotFoundError:
+                    print(f"Directory not found: {project_root / 'trained_models'}")
+
+                print("Attempting to load base 'gpt2' model as a fallback.")
+                model_name_or_path = "gpt2"
+            else:
+                print(f"Model directory found: {model_path.resolve()}")
+                # Optional: List contents of model directory
+                print("Listing contents of model directory:")
+                print(list(model_path.iterdir()))
+                model_name_or_path = str(model_path)
+
+            try:
+                print(f"Attempting to load tokenizer and model from: {model_name_or_path}")
+                ChatService._tokenizer = GPT2Tokenizer.from_pretrained(model_name_or_path)
+                ChatService._model = GPT2LMHeadModel.from_pretrained(model_name_or_path)
+
+                if ChatService._tokenizer.pad_token is None:
+                    ChatService._tokenizer.pad_token = ChatService._tokenizer.eos_token
+
+                self._device = torch.device("cuda" if torch.cuda.is_available() else "cpu")  # Use self._device
+                ChatService._model.to(self._device)
+                ChatService._model.eval()
+                print(f"Model loaded successfully from '{model_name_or_path}' on {self._device}.")
+            except Exception as e:
+                print(f"CRITICAL: Failed to load model from '{model_name_or_path}': {e}")
+                if model_name_or_path != "gpt2":
+                    print("Attempting to load base 'gpt2' model as a fallback due to previous error.")
+                    try:
+                        ChatService._tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
+                        ChatService._model = GPT2LMHeadModel.from_pretrained("gpt2")
+
+                        if ChatService._tokenizer.pad_token is None:
+                            ChatService._tokenizer.pad_token = ChatService._tokenizer.eos_token
+
+                        self._device = torch.device(
+                            "cuda" if torch.cuda.is_available() else "cpu")  # Use self._device
+                        ChatService._model.to(self._device)
+                        ChatService._model.eval()
+                        print(f"Base 'gpt2' model loaded successfully on {self._device}.")
+                    except Exception as fallback_e:
+                        print(f"CRITICAL: Failed to load base 'gpt2' model as fallback: {fallback_e}")
+                        ChatService._model = None  # Ensure they are None
+                        ChatService._tokenizer = None
+                        self._device = None
+                        raise RuntimeError(
+                            f"Could not load any model. Primary error: {e}. Fallback error: {fallback_e}") from fallback_e
+                else:
+                    ChatService._model = None  # Ensure they are None
+                    ChatService._tokenizer = None
+                    self._device = None
+                    raise RuntimeError(f"Could not load base 'gpt2' model: {e}") from e
+
 
     def is_model_ready(self) -> bool:
         """Checks if the model and tokenizer are loaded and ready."""
