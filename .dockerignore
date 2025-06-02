@@ -1,0 +1,73 @@
+# .dockerignore (in the project root)
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environment
+.venv/
+env/
+venv/
+ENV/
+env.bak
+venv.bak
+
+# IDE specific
+.idea/
+.vscode/
+*.project
+*.tmproj
+*.sublime-project
+*.sublime-workspace
+
+# OS specific
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Docker
+Dockerfile* # Exclude Dockerfiles themselves from being copied into other images if context is higher up
+docker-compose.yml
+
+# Data and Models (These should NOT be in your image unless absolutely necessary and small)
+# Your model is loaded from a volume/path, not built into the image.
+data/
+trained_models/ # CRITICAL: Your fine-tuned model is large and should not be part of the image.
+               It will be accessed via the path in chat_service.py,
+               which will point to your host machine when running locally,
+               or a mounted volume in more advanced Docker setups.
+
+# Test files
+tests/
+*.test
+*.pyc
+
+# Notebooks
+notebooks/
+
+# Cache files from Hugging Face or other libraries
+.cache/
