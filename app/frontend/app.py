@@ -1,60 +1,59 @@
 # app/frontend/app.py
 import streamlit as st
 import requests
-import os
+import os  # Import the os module
+from requests.models import Response # Import Response for type hinting
 
-BACKEND_API_URL = os.getenv("BACKEND_API_URL", "http://localhost:8000/chat")
+# Get the backend API URL from the environment variable
+# Provide a default for local development outside of Docker
+BACKEND_URL = os.environ.get("BACKEND_API_URL", "http://localhost:8000")
+CHAT_ENDPOINT = f"{BACKEND_URL}/chat"
 
-st.set_page_config(page_title="SophiaWeaver Chat", layout="wide")  # UPDATED
+st.title("SophiaWeaver - Bible Chatbot")
 
-st.title("💬 SophiaWeaver Chatbot")  # UPDATED
-st.caption("A GenAI chatbot for insightful conversations, focused on The Bible.")  # UPDATED
-
+# Initialize chat history
 if "messages" not in st.session_state:
-    st.session_state.messages = [{"role": "assistant",
-                                  "content": "Hello! How can I help you explore insights from The Bible today?"}]  # Initial message
+    st.session_state.messages = []
 
+# Display chat messages from history on app rerun
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-if prompt := st.chat_input("Ask something about The Bible..."):  # UPDATED placeholder
+# Accept user input
+if prompt := st.chat_input("Ask something about The Bible..."):
+    # Add user message to chat history
     st.session_state.messages.append({"role": "user", "content": prompt})
+    # Display user message in chat message container
     with st.chat_message("user"):
         st.markdown(prompt)
 
+    # Display assistant response in chat message container
     with st.chat_message("assistant"):
         message_placeholder = st.empty()
-        full_response = ""
-
+        full_response_text = ""
         try:
+            # Prepare the request payload
             payload = {
                 "user_input": prompt,
-                "max_length": 150,
-                "temperature": 0.7
+                "max_length": 150,  # You can adjust this
+                "temperature": 0.7  # You can adjust this
             }
-            response = requests.post(BACKEND_API_URL, json=payload, timeout=120)
-            response.raise_for_status()
+            # Send request to the backend
+            response: Response = requests.post(CHAT_ENDPOINT, json=payload)  # Use the CHAT_ENDPOINT
+            response.raise_for_status()  # Raise an exception for HTTP errors (4xx or 5xx)
 
             bot_response_data = response.json()
-            full_response = bot_response_data.get("bot_response", "Sorry, I didn't get a valid response.")
+            full_response_text = bot_response_data.get("bot_response_data", "Sorry, I couldn't get a response.")
 
         except requests.exceptions.RequestException as e:
-            full_response = f"Error connecting to backend: {e}"
-            st.error(full_response)
+            st.error(f"Error connecting to the backend: {e}")
+            full_response_text = "Error: Could not connect to the chatbot service."
         except Exception as e:
-            full_response = f"An unexpected error occurred: {e}"
-            st.error(full_response)
+            st.error(f"An unexpected error occurred: {e}")
+            full_response_text = "Error: An unexpected error occurred while fetching the response."
 
-        message_placeholder.markdown(full_response)
+        message_placeholder.markdown(full_response_text)
 
-    st.session_state.messages.append({"role": "assistant", "content": full_response})
-
-with st.sidebar:
-    st.header("About SophiaWeaver")  # UPDATED
-    st.markdown("This is Phase 1 of the **SophiaWeaver** chatbot, fine-tuned on texts from The Bible.")  # UPDATED
-    st.markdown("---")
-    st.subheader("Backend API URL")
-    st.text_input("API URL", value=BACKEND_API_URL, key="api_url_display", disabled=True)
-    st.caption(
-        "This is the URL the frontend uses to talk to the backend. Configurable via BACKEND_API_URL environment variable.")
+    # Add assistant response to chat history
+    st.session_state.messages.append({"role": "assistant", "content": full_response_text})
