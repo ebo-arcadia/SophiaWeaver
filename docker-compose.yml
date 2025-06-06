@@ -1,40 +1,31 @@
-version: '3.8' # Specifies the version of the Docker Compose file format
-
+# No 'version' key needed at the top
 services:
   backend:
-    image: sophiaweaver-backend:latest # Use the image we just built
+    build:
+      context: ./app/backend # Path to the directory containing the backend Dockerfile
+      dockerfile: Dockerfile   # Optional: name of the Dockerfile (defaults to 'Dockerfile')
+    image: sophiaweaver-backend:latest # Still good to name the image built
     container_name: sophiaweaver-backend-container
     ports:
-      - "8000:8000" # Map port 8000 on the host to port 8000 in the container
+      - "8000:8000"
     volumes:
-      # Mount the local 'trained_models' directory into the container
-      # This allows the backend service to access your fine-tuned model
-      # IMPORTANT: Adjust the host path on the left if your 'trained_models'
-      # directory is located elsewhere relative to this docker-compose.yml file.
-      # Assuming 'trained_models' is in the same directory as docker-compose.yml:
-      - ./trained_models
-      # Mount the local 'data' directory into the container (if needed by the backend)
+      - ./trained_models:/app/backend/trained_models
       # - ./data:/app/backend/data
     environment:
-      # You can define environment variables here if your app needs them
-      # Example:
-      # - SOME_API_KEY=your_api_key_here
-      # - PYTHONUNBUFFERED=1 # Often useful for seeing Python logs immediately
       PYTHONUNBUFFERED: 1
-    restart: unless-stopped # Or 'always' or 'on-failure'
+    restart: unless-stopped
 
   frontend:
-    image: sophiaweaver-frontend:latest # Use the image we just built
+    build:
+      context: ./app/frontend # Path to the directory containing the frontend Dockerfile
+      dockerfile: Dockerfile    # Optional
+    image: sophiaweaver-frontend:latest # Still good to name the image built
     container_name: sophiaweaver-frontend-container
     ports:
-      - "8501:8501" # Map port 8501 on the host to port 8501 in the container
+      - "8501:8501"
     depends_on:
-      - backend # Tells Docker Compose to start the backend service before the frontend
+      - backend
     environment:
-      # The Streamlit app needs to know where the backend API is.
-      # 'backend' is the service name defined above, and Docker Compose's
-      # internal DNS will resolve 'backend' to the backend container's IP.
-      # Port 8000 is where the backend API is listening inside its container.
       BACKEND_API_URL: http://backend:8000
       PYTHONUNBUFFERED: 1
     restart: unless-stopped

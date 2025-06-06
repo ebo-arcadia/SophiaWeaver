@@ -24,38 +24,58 @@ class ChatService:
                 print(f"ChatService: Critical error during initial model load: {e}")
         return cls._instance
 
-        # app/backend/app/services/chat_service.py
-        # ... (other parts of the class) ...
-
     def _load_model(self):
         if ChatService._model is None or ChatService._tokenizer is None:
-            # Correctly navigate to the project root "SophiaWeaver/"
-            current_file_path = Path(__file__).resolve()
-            project_root = current_file_path.parent.parent.parent.parent.parent
+            # Determine the base path for models.
+            # When running in Docker, the WORKDIR is /app/backend.
+            # The volume mount places 'trained_models' inside this WORKDIR.
+            # So, the effective project_root *inside the container* for model loading
+            # should be the WORKDIR itself.
 
-            model_path = project_root / "trained_models" / "the_bible_gpt2_small"
+            # A more robust way to define where models are, especially in Docker:
+            # Option 1: Assume models are relative to the service's working directory
+            # This aligns with how Docker volumes are often set up.
+            # The WORKDIR in your backend Dockerfile is /app/backend
+            container_workdir = Path("/app/backend")
+            model_base_path = container_workdir
 
-            print(f"DEBUG: Current file __file__: {current_file_path}")
-            print(f"DEBUG: Calculated project_root: {project_root}")
-            print(f"DEBUG: Attempting to load model from absolute path: {model_path.resolve()}")
+            # Option 2: Use an environment variable to specify the models directory (more flexible)
+            # For example, you could set MODELS_DIR_PATH=/app/backend/trained_models in docker-compose.yml
+            # models_dir_env = os.getenv("MODELS_DIR_PATH")
+            # if models_dir_env:
+            #     model_base_path = Path(models_dir_env).parent # if MODELS_DIR_PATH points directly to trained_models
+            # else:
+            #     # Fallback for local development or if env var not set
+            #     current_file_path = Path(__file__).resolve()
+            #     # For local: SoftwareDev/GenAI/SophiaWeaver/app/backend/app/services/chat_service.py
+            #     # project_root should be SoftwareDev/GenAI/SophiaWeaver
+            #     model_base_path = current_file_path.parent.parent.parent.parent.parent
+
+            project_root_for_models = model_base_path
+
+            model_path = project_root_for_models / "trained_models" / "the_bible_gpt2_small"
+
+            print(f"DEBUG: chat_service.py _load_model - Effective model base path: {project_root_for_models}")
+            print(f"DEBUG: chat_service.py _load_model - Attempting to load model from: {model_path.resolve()}")
 
             if not model_path.exists() or not model_path.is_dir():
                 print(f"Model directory not found or is not a directory: {model_path.resolve()}")
                 print("Please ensure the model is trained and available in the correct location.")
                 # Optional: List contents of expected parent to help debug
                 try:
-                    print(f"Listing contents of {project_root / 'trained_models'}:")
-                    print(list((project_root / "trained_models").iterdir()))
-                except FileNotFoundError:
-                    print(f"Directory not found: {project_root / 'trained_models'}")
+                    expected_parent = project_root_for_models / "trained_models"
+                    print(f"Listing contents of {expected_parent}:")
+                    if expected_parent.exists():
+                        print(list(expected_parent.iterdir()))
+                    else:
+                        print(f"Directory {expected_parent} does not exist.")
+                except Exception as list_e:
+                    print(f"Error listing directory {expected_parent}: {list_e}")
 
                 print("Attempting to load base 'gpt2' model as a fallback.")
                 model_name_or_path = "gpt2"
             else:
                 print(f"Model directory found: {model_path.resolve()}")
-                # Optional: List contents of model directory
-                print("Listing contents of model directory:")
-                print(list(model_path.iterdir()))
                 model_name_or_path = str(model_path)
 
             try:
@@ -66,38 +86,39 @@ class ChatService:
                 if ChatService._tokenizer.pad_token is None:
                     ChatService._tokenizer.pad_token = ChatService._tokenizer.eos_token
 
-                self._device = torch.device("cuda" if torch.cuda.is_available() else "cpu")  # Use self._device
-                ChatService._model.to(self._device)
+                ChatService._device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+                ChatService._model.to(ChatService._device)
                 ChatService._model.eval()
-                print(f"Model loaded successfully from '{model_name_or_path}' on {self._device}.")
+                print(f"Model loaded successfully from '{model_name_or_path}' on {ChatService._device}.")
+                ChatService._model_ready = True
             except Exception as e:
                 print(f"CRITICAL: Failed to load model from '{model_name_or_path}': {e}")
-                if model_name_or_path != "gpt2":
+                # Fallback logic (simplified for brevity, ensure your full fallback is robust)
+                if model_name_or_path != "gpt2":  # Avoid infinite loop if base gpt2 fails
                     print("Attempting to load base 'gpt2' model as a fallback due to previous error.")
                     try:
                         ChatService._tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
                         ChatService._model = GPT2LMHeadModel.from_pretrained("gpt2")
-
                         if ChatService._tokenizer.pad_token is None:
                             ChatService._tokenizer.pad_token = ChatService._tokenizer.eos_token
-
-                        self._device = torch.device(
-                            "cuda" if torch.cuda.is_available() else "cpu")  # Use self._device
-                        ChatService._model.to(self._device)
+                        ChatService._device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+                        ChatService._model.to(ChatService._device)
                         ChatService._model.eval()
-                        print(f"Base 'gpt2' model loaded successfully on {self._device}.")
+                        print(f"Base 'gpt2' model loaded successfully on {ChatService._device}.")
+                        ChatService._model_ready = True
                     except Exception as fallback_e:
                         print(f"CRITICAL: Failed to load base 'gpt2' model as fallback: {fallback_e}")
-                        ChatService._model = None  # Ensure they are None
+                        # Ensure model and tokenizer are None if all attempts fail
+                        ChatService._model = None
                         ChatService._tokenizer = None
-                        self._device = None
-                        raise RuntimeError(
-                            f"Could not load any model. Primary error: {e}. Fallback error: {fallback_e}") from fallback_e
-                else:
-                    ChatService._model = None  # Ensure they are None
+                        ChatService._model_ready = False
+                        # Consider re-raising or handling this critical failure appropriately
+                else:  # Base gpt2 itself failed
+                    ChatService._model = None
                     ChatService._tokenizer = None
-                    self._device = None
-                    raise RuntimeError(f"Could not load base 'gpt2' model: {e}") from e
+                    ChatService._model_ready = False
+        else:
+            print("Model and tokenizer already loaded.")
 
 
     def is_model_ready(self) -> bool:

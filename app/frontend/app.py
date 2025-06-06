@@ -44,7 +44,7 @@ if prompt := st.chat_input("Ask something about The Bible..."):
             response.raise_for_status()  # Raise an exception for HTTP errors (4xx or 5xx)
 
             bot_response_data = response.json()
-            full_response_text = bot_response_data.get("bot_response_data", "Sorry, I couldn't get a response.")
+            full_response_text = bot_response_data.get("bot_response", "Sorry, I couldn't get a response.")
 
         except requests.exceptions.RequestException as e:
             st.error(f"Error connecting to the backend: {e}")
