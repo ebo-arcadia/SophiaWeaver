@@ -2,13 +2,16 @@
 from pathlib import Path
 from transformers import GPT2LMHeadModel, GPT2Tokenizer
 import torch
-
+import re
 
 class ChatService:
     _instance = None
     _model: GPT2LMHeadModel | None = None  # Added type hint
     _tokenizer: GPT2Tokenizer | None = None # Added type hint
     _device: torch.device | None = None # Added type hint for device
+
+    MIN_INPUT_LENGTH = 3
+    CONTAINS_ALPHANUMERIC_PATTERN = re.compile(r'[a-zA-Z0-9]')
 
     def __new__(cls):
         if cls._instance is None:
@@ -130,6 +133,13 @@ class ChatService:
             # This case should ideally be caught by the /chat endpoint's check first
             return "Error: Model not available. Please check server logs."
 
+        sanitized_input = user_input.strip()
+
+        if len(sanitized_input) < self.MIN_INPUT_LENGTH:
+            return "I need a bit more to go on! Could you please provide a longer question or statement? 🤔"
+
+        if not self.CONTAINS_ALPHANUMERIC_PATTERN.search(sanitized_input):
+            return "I'm having trouble understanding that. Could you try rephrasing with more standard text, perhaps including some letters or numbers? 🧐"
         # Ensure _model and _tokenizer are not None here, which is guaranteed by is_model_ready()
         # but linters/type checkers might still want explicit checks or asserts
         # if they can't infer it perfectly. For runtime, is_model_ready() is the guard.
@@ -138,8 +148,7 @@ class ChatService:
         assert self._device is not None
 
         try:
-            prompt = user_input
-
+            prompt = sanitized_input
             # Use the tokenizer's __call__ method for robust tensor output
             # This returns a BatchEncoding object (like a dictionary)
             tokenized_inputs = self._tokenizer(
