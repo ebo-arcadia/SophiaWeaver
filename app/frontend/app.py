@@ -2,7 +2,7 @@
 import streamlit as st
 import requests
 import os
-import time # For a slight delay to show "thinking"
+import time
 from requests.models import Response
 
 # --- Page Configuration (Set this at the very top) ---
@@ -12,6 +12,9 @@ st.set_page_config(
     layout="centered",   # Changed from "wide", "centered" works well with a sidebar
     initial_sidebar_state="expanded" # Ensure sidebar is visible
 )
+
+if "processing_lock" not in st.session_state:
+    st.session_state.processing_lock = False
 
 # --- Backend API Configuration ---
 BACKEND_URL = os.environ.get("BACKEND_API_URL", "http://localhost:8000")
@@ -55,9 +58,11 @@ for message in st.session_state.messages:
         st.markdown(message["content"])
 
 # --- Accept User Input ---
-prompt = st.chat_input("Type your Bible question here... 🤔")
+prompt = st.chat_input("Type your Bible question here... 🤔",
+                       disabled=st.session_state.processing_lock)
 
 if prompt:
+    st.session_state.processing_lock = True
     # Add user message to chat history and display it
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user", avatar="👤"):
@@ -70,8 +75,8 @@ if prompt:
         with message_placeholder.container():
             st.markdown("Thinking... 🧠")
             # You can add a spinner too:
-            # with st.spinner("Sophia is searching the scriptures..."):
-            #     time.sleep(0.5) # Small delay for effect, remove if backend is very fast
+            with st.spinner("Sophia is searching the scriptures..."):
+                time.sleep(0.5) # Small delay for effect, remove if backend is very fast
 
         full_response_text = ""
         try:
@@ -101,6 +106,8 @@ if prompt:
 
     # Add assistant response to chat history
     st.session_state.messages.append({"role": "assistant", "content": full_response_text})
+    st.session_state.processing_lock = False
+    st.rerun()
 
 # --- Footer (Optional) ---
 st.markdown("---")
