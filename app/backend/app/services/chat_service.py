@@ -23,9 +23,10 @@ class ChatService:
         """
         if not ChatService._model_ready:  # Check the class-level flag
             # Call _load_model which will attempt to load and set class attributes
-            self._load_model()
+            ChatService._load_model()
 
-    def _load_model(self):
+    @staticmethod
+    def _load_model():
         """
         Loads the model and tokenizer and sets them as class attributes.
         This method is called only if the model hasn't been loaded yet.
@@ -107,14 +108,15 @@ class ChatService:
                     ChatService._model_ready = False  # All attempts failed
             # If even 'gpt2' failed initially, _model_ready is already False
 
-    def is_model_ready(self) -> bool:
+    @staticmethod
+    def is_model_ready() -> bool:
         """Checks if the model and tokenizer are loaded and ready."""
         # _model_ready flag is the primary indicator.
         # Additionally, ensure model and tokenizer objects are not None.
         return ChatService._model_ready and ChatService._model is not None and ChatService._tokenizer is not None
 
     def generate_response(self, user_input: str, max_length: int = 100, temperature: float = 0.7) -> str:
-        if not self.is_model_ready():
+        if not ChatService.is_model_ready():
             return "Error: Model not available. Please check server logs."
 
         sanitized_input = user_input.strip()
