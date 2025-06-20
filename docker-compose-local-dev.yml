@@ -1,0 +1,31 @@
+# No 'version' key needed at the top
+services:
+  backend:
+    build:
+      context: ./app/backend # Path to the directory containing the backend Dockerfile
+      dockerfile: Dockerfile   # Optional: name of the Dockerfile (defaults to 'Dockerfile')
+    image: sophiaweaver-backend:latest # Still good to name the image built
+    container_name: sophiaweaver-backend-container
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./trained_models:/app/backend/trained_models
+      # - ./data:/app/backend/data
+    environment:
+      PYTHONUNBUFFERED: 1
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./app/frontend # Path to the directory containing the frontend Dockerfile
+      dockerfile: Dockerfile    # Optional
+    image: sophiaweaver-frontend:latest # Still good to name the image built
+    container_name: sophiaweaver-frontend-container
+    ports:
+      - "8501:8501"
+    depends_on:
+      - backend
+    environment:
+      BACKEND_API_URL: http://backend:8000
+      PYTHONUNBUFFERED: 1
+    restart: unless-stopped

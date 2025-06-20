@@ -51,7 +51,7 @@ Thumbs.db
 
 # Docker
 Dockerfile* # Exclude Dockerfiles themselves from being copied into other images if context is higher up
-docker-compose.yml
+docker-compose-local-dev.yml
 
 # Data and Models (These should NOT be in your image unless absolutely necessary and small)
 # Your model is loaded from a volume/path, not built into the image.
