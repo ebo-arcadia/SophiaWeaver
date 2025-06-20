@@ -1,25 +1,23 @@
-# This is the docker-compose.yml for your Hugging Face Space
 services:
   backend:
-    # Pull the pre-built image from Docker Hub
+    build: ./app/backend
     image: eboneoarcadia/sophiaweaver-backend:latest
+    container_name: sophiaweaver-backend-container
     ports:
       - "8000:8000"
     volumes:
-      # This mounts the model files from the Space's repo into the container
-      - ./trained_models:/app/backend/trained_models
+      - ./app/backend/trained_models:/app/backend/trained_models
     environment:
       PYTHONUNBUFFERED: 1
     restart: unless-stopped
 
   frontend:
-    # Pull the pre-built image from Docker Hub
+    build: ./app/frontend
     image: eboneoarcadia/sophiaweaver-frontend:latest
+    container_name: sophiaweaver-frontend-container
     ports:
-      # Hugging Face Spaces exposes port 7860 for web UIs
-      - "7860:8501"
+      - "8501:8501"
     environment:
-      # The frontend can find the backend using its service name
       BACKEND_API_URL: http://backend:8000
       PYTHONUNBUFFERED: 1
     depends_on:
